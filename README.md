@@ -1,20 +1,20 @@
-# 🔥 Advanced Linux Firewall & Intrusion Prevention System (IPS)
+🔥 Advanced Linux Firewall & Intrusion Prevention System (IPS)
 
 A Bash-driven Linux firewall built on iptables that implements stateful packet inspection, honeyport-based intrusion detection, and automated IP banning.  
 This project demonstrates practical Blue-Team and Purple-Team skills in host-level defense and automated threat response.
 
----
 
-## 📌 Project Overview
+
+📌 Project Overview
 
 This project focuses on strengthening host security by actively monitoring and filtering network traffic. 
 It detects suspicious behavior such as port scans and brute-force attempts, then dynamically applies defensive rules to block attackers.
 
 The goal is to showcase how Linux firewalls can be tuned beyond basic filtering to provide real-time intrusion prevention.
 
----
 
-## 🚀 Features
+
+🚀 Features
 
 ✅ Stateful firewall using conntrack
 ✅ Honeyport intrusion detection & auto-ban
@@ -23,9 +23,9 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 ✅ Modular Bash automation 
 ✅ Safe firewall reset mechanism 
 
----
 
-## 🛠️ Technologies Used
+
+🛠️ Technologies Used
 
 - Bash scripting 
 - iptables / netfilter 
@@ -50,21 +50,26 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 
     sudo ./firewall_super_advanced.sh
 
+
+
 🧪 Testing
 
 You can test detection using:
 
-Port scanning
+1. Port scanning
 
-    nmap <target-ip>
+        nmap <target-ip>
 
-Connection attempts
+2. Connection attempts
 
-    nc -zv <target-ip> <port>
+        nc -zv <target-ip> <port>
 
-View logs
+3. View logs
 
-    sudo dmesg | grep IPTABLES
+        sudo dmesg | grep IPTABLES
+
+
+
 
 📷 Screenshots
 
@@ -74,22 +79,30 @@ View logs
 
 ![Honeyport Detection](screenshots/Honeyport_Alert2.png)
 
+
+
+
 🛡️ Learning Outcomes
 
-Practical firewall rule design
+1. Practical firewall rule design
 
-Threat detection using logs
+2. Threat detection using logs
 
-Automated defensive response
+3. Automated defensive response
 
-Attack surface reduction techniques
+4. Attack surface reduction techniques
 
-Blue-Team and Purple-Team thinking
+5. Blue-Team and Purple-Team thinking
+
+
+
 
 ⚠️ Disclaimer
 
 This project is for educational and research purposes only.
 Do not deploy on production systems without proper testing.
+
+
 
 👤 Author
 
@@ -99,10 +112,10 @@ Cybersecurity Enthusiast | Blue Team | Defensive Security
 
 ⭐ Future Improvements
 
-nftables version
+1. nftables version
 
-Web dashboard for monitoring
+2. Web dashboard for monitoring
 
-Geo-IP blocking
+3. Geo-IP blocking
 
-IDS/IPS integration (Suricata/Snort)
+4. IDS/IPS integration (Suricata/Snort)
