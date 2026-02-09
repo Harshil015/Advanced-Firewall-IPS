@@ -3,7 +3,7 @@
 A Bash-driven Linux firewall built on iptables that implements stateful packet inspection, honeyport-based intrusion detection, and automated IP banning.  
 This project demonstrates practical Blue-Team and Purple-Team skills in host-level defense and automated threat response.
 
-
+---
 
 📌 Project Overview
 
@@ -12,7 +12,7 @@ It detects suspicious behavior such as port scans and brute-force attempts, then
 
 The goal is to showcase how Linux firewalls can be tuned beyond basic filtering to provide real-time intrusion prevention.
 
-
+---
 
 🚀 Features
 
@@ -23,7 +23,7 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 ✅ Modular Bash automation 
 ✅ Safe firewall reset mechanism 
 
-
+---
 
 🛠️ Technologies Used
 
@@ -33,6 +33,7 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 - TCP/IP fundamentals 
 - conntrack module 
 
+---
 
 ⚙️ Installation & Usage
 
@@ -50,7 +51,7 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 
     sudo ./firewall_super_advanced.sh
 
-
+---
 
 🧪 Testing
 
@@ -68,8 +69,7 @@ You can test detection using:
 
         sudo dmesg | grep IPTABLES
 
-
-
+---
 
 📷 Screenshots
 
@@ -80,6 +80,7 @@ You can test detection using:
 ![Honeyport Detection](screenshots/Honeyport_Alert2.png)
 
 
+---
 
 
 🛡️ Learning Outcomes
@@ -95,20 +96,22 @@ You can test detection using:
 5. Blue-Team and Purple-Team thinking
 
 
-
+---
 
 ⚠️ Disclaimer
 
 This project is for educational and research purposes only.
 Do not deploy on production systems without proper testing.
 
-
+---
 
 👤 Author
 
 Harshil Makwana
 
 Cybersecurity Enthusiast | Blue Team | Defensive Security
+
+---
 
 ⭐ Future Improvements
 
