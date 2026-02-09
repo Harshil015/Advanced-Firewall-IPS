@@ -40,4 +40,5 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 ### 1️⃣ Clone the repository
 
 git clone https://github.com/yourusername/Advanced-Firewall-IPS.git
+
 cd Advanced-Firewall-IPS
