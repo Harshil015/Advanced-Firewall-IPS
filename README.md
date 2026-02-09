@@ -33,23 +33,22 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 - TCP/IP fundamentals 
 - conntrack module 
 
----
 
-## ⚙️ Installation & Usage
+⚙️ Installation & Usage
 
-### 1️⃣ Clone the repository
+1️⃣ Clone the repository
 
-git clone https://github.com/yourusername/Advanced-Firewall-IPS.git
+    git clone https://github.com/yourusername/Advanced-Firewall-IPS.git
 
-cd Advanced-Firewall-IPS
+    cd Advanced-Firewall-IPS
 
 2️⃣ Make script executable
 
-chmod +x firewall_super_advanced.sh
+    chmod +x firewall_super_advanced.sh
 
 3️⃣ Run the firewall
 
-sudo ./firewall_super_advanced.sh
+    sudo ./firewall_super_advanced.sh
 
 🧪 Testing
 
@@ -57,15 +56,15 @@ You can test detection using:
 
 Port scanning
 
-nmap <target-ip>
+    nmap <target-ip>
 
 Connection attempts
 
-nc -zv <target-ip> <port>
+    nc -zv <target-ip> <port>
 
 View logs
 
-sudo dmesg | grep IPTABLES
+    sudo dmesg | grep IPTABLES
 
 📷 Screenshots
 
@@ -74,3 +73,36 @@ sudo dmesg | grep IPTABLES
 ![Honeyport Detection](screenshots/Honeyport_Alert1.png)
 
 ![Honeyport Detection](screenshots/Honeyport_Alert2.png)
+
+🛡️ Learning Outcomes
+
+Practical firewall rule design
+
+Threat detection using logs
+
+Automated defensive response
+
+Attack surface reduction techniques
+
+Blue-Team and Purple-Team thinking
+
+⚠️ Disclaimer
+
+This project is for educational and research purposes only.
+Do not deploy on production systems without proper testing.
+
+👤 Author
+
+Harshil Makwana
+
+Cybersecurity Enthusiast | Blue Team | Defensive Security
+
+⭐ Future Improvements
+
+nftables version
+
+Web dashboard for monitoring
+
+Geo-IP blocking
+
+IDS/IPS integration (Suricata/Snort)
