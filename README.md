@@ -42,3 +42,35 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 git clone https://github.com/yourusername/Advanced-Firewall-IPS.git
 
 cd Advanced-Firewall-IPS
+
+2️⃣ Make script executable
+
+chmod +x firewall_super_advanced.sh
+
+3️⃣ Run the firewall
+
+sudo ./firewall_super_advanced.sh
+
+🧪 Testing
+
+You can test detection using:
+
+Port scanning
+
+nmap <target-ip>
+
+Connection attempts
+
+nc -zv <target-ip> <port>
+
+View logs
+
+sudo dmesg | grep IPTABLES
+
+📷 Screenshots
+
+![Firewall Rules](screenshots/Firewall_Rules.png)
+
+![Honeyport Detection](screenshots/Honeyport_Alert1.png)
+
+![Honeyport Detection](screenshots/Honeyport_Alert2.png)
