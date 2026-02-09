@@ -122,3 +122,9 @@ Cybersecurity Enthusiast | Blue Team | Defensive Security
 3. Geo-IP blocking
 
 4. IDS/IPS integration (Suricata/Snort)
+
+---
+
+# 🤝 Contributions
+
+Suggestions and improvements are welcome!
