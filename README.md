@@ -1,11 +1,11 @@
-🔥 Advanced Linux Firewall & Intrusion Prevention System (IPS)
+# 🔥 Advanced Linux Firewall & Intrusion Prevention System (IPS)
 
 A Bash-driven Linux firewall built on iptables that implements stateful packet inspection, honeyport-based intrusion detection, and automated IP banning.  
 This project demonstrates practical Blue-Team and Purple-Team skills in host-level defense and automated threat response.
 
 ---
 
-📌 Project Overview
+# 📌 Project Overview
 
 This project focuses on strengthening host security by actively monitoring and filtering network traffic. 
 It detects suspicious behavior such as port scans and brute-force attempts, then dynamically applies defensive rules to block attackers.
@@ -14,7 +14,7 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 
 ---
 
-🚀 Features
+# 🚀 Features
 
 ✅ Stateful firewall using conntrack
 ✅ Honeyport intrusion detection & auto-ban
@@ -25,7 +25,7 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 
 ---
 
-🛠️ Technologies Used
+# 🛠️ Technologies Used
 
 - Bash scripting 
 - iptables / netfilter 
@@ -35,7 +35,7 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 
 ---
 
-⚙️ Installation & Usage
+# ⚙️ Installation & Usage
 
 1️⃣ Clone the repository
 
@@ -53,7 +53,7 @@ The goal is to showcase how Linux firewalls can be tuned beyond basic filtering 
 
 ---
 
-🧪 Testing
+# 🧪 Testing
 
 You can test detection using:
 
@@ -71,7 +71,7 @@ You can test detection using:
 
 ---
 
-📷 Screenshots
+# 📷 Screenshots
 
 ![Firewall Rules](screenshots/Firewall_Rules.png)
 
@@ -83,7 +83,7 @@ You can test detection using:
 ---
 
 
-🛡️ Learning Outcomes
+# 🛡️ Learning Outcomes
 
 1. Practical firewall rule design
 
@@ -98,14 +98,14 @@ You can test detection using:
 
 ---
 
-⚠️ Disclaimer
+# ⚠️ Disclaimer
 
 This project is for educational and research purposes only.
 Do not deploy on production systems without proper testing.
 
 ---
 
-👤 Author
+# 👤 Author
 
 Harshil Makwana
 
@@ -113,7 +113,7 @@ Cybersecurity Enthusiast | Blue Team | Defensive Security
 
 ---
 
-⭐ Future Improvements
+# ⭐ Future Improvements
 
 1. nftables version
 
