@@ -95,19 +95,6 @@ sudo dmesg | grep IPTABLES
 
 ---
 
-## Screenshots
-
-Firewall rules active and loaded:
-
-![Firewall Rules](screenshots/Firewall_Rules.png)
-
-Honeyport detection firing and ban inserting:
-
-![Honeyport Alert 1](screenshots/Honeyport_Alert1.png)
-![Honeyport Alert 2](screenshots/Honeyport_Alert2.png)
-
----
-
 ## What this demonstrates
 
 - Stateful firewall rule design and iptables/netfilter fluency
