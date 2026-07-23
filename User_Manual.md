@@ -1,170 +1,128 @@
 # Advanced Linux Firewall & IPS - User Manual
 
-This manual provides comprehensive instructions on how to install, configure, and use the **Advanced Linux Firewall & IPS**. It is designed for system administrators, security enthusiasts, and pentesters who want host-level defense with automated intrusion prevention.
+This manual provides comprehensive instructions on how to install, configure, and use the **Advanced Linux Firewall & IPS**. 
 
 ---
 
 ## Table of Contents
 1. [Prerequisites & Installation](#1-prerequisites--installation)
-2. [Quick Start Guide](#2-quick-start-guide-recommended-setup)
-3. [Core Features & Use Cases](#3-core-features--use-cases)
-4. [Testing & Attack Scenarios](#4-testing--attack-scenarios)
-5. [Operational Management](#5-operational-management)
-6. [Troubleshooting & FAQs](#6-troubleshooting--faqs)
+2. [Configuration](#2-configuration)
+3. [Usage Commands](#3-usage-commands)
+4. [Web Dashboard](#4-web-dashboard)
+5. [Testing & Attack Scenarios](#5-testing--attack-scenarios)
+6. [Using nftables (Modern Distros)](#6-using-nftables-modern-distros)
 
 ---
 
 ## 1. Prerequisites & Installation
 
 ### System Requirements
-*   **OS:** Linux (Tested on Ubuntu 22.04 and Kali Linux)
+*   **OS:** Linux (Ubuntu 22.04, Kali Linux, or any Debian-based distro)
 *   **Permissions:** Root (`sudo`) access
-*   **Dependencies:** `iptables`, `dmesg`, `awk`
+*   **Dependencies:** `iptables`, `dmesg`, `curl` (for alerts), `python3-flask` (for dashboard)
 
-### Installation Steps
+### Installation
 1. Clone the repository:
    ```bash
    git clone https://github.com/Harshil015/Advanced-Firewall-IPS.git
-   ```
-2. Navigate to the directory:
-   ```bash
    cd Advanced-Firewall-IPS
    ```
-3. Make the script executable:
+2. Install optional packages for full feature support:
    ```bash
-   chmod +x firewall.sh
-   ```
-4. Run the script with root privileges:
-   ```bash
-   sudo ./firewall.sh
+   sudo apt update
+   sudo apt install python3-flask curl xtables-addons-common geoip-database
    ```
 
 ---
 
-## 2. Quick Start Guide (Recommended Setup)
+## 2. Configuration
 
-For optimal security, apply your rules in this specific order. Rule order in `iptables` matters—this sequence ensures legitimate traffic is allowed before malicious traffic is logged and dropped.
+Before starting the firewall, edit the `config.conf` file to match your environment. The script reads this file automatically upon startup.
 
-1.  **Select Option 1: Enable Stateful Firewall** (Drops all unauthorized inbound traffic).
-2.  **Select Option 3: Enable Rate-Limiting** (Protect your active services, like SSH on port 22).
-3.  **Select Option 2: Enable Honeyport Auto-Ban** (Set up traps on unused ports).
-4.  **Select Option 4: Enable Catch-all Logging** (Log any remaining dropped packets).
-5.  **Select Option 5: Start Watchdog Daemon** (Activates the automated banning engine).
-
----
-
-## 3. Core Features & Use Cases
-
-### Use Case 1: Baseline Server Hardening (Stateful Firewall)
-**Menu Option:** `1) Enable Stateful Firewall`
-
-*   **What it does:** Flushes existing rules and sets default policies to `DROP` for inbound and forwarded traffic. It allows outbound traffic and permits already-established connections.
-*   **When to use:** Immediately upon logging into a fresh server deployment. 
-*   **Effect:** Makes the server invisible to unsolicited inbound probes (like `ping` or random port scans) while allowing you to download updates and browse from the server.
-
-### Use Case 2: Brute-Force Protection (Rate-Limiting)
-**Menu Option:** `3) Enable Rate-Limiting`
-
-*   **What it does:** Uses the `hashlimit` module to restrict the number of new connections an IP can make to a specific port per minute.
-*   **When to use:** On exposed service ports like SSH (22), RDP (3389), or custom web ports to prevent credential stuffing and brute-force attacks.
-*   **How to use:** 
-    *   Enter the port to protect (e.g., `22`).
-    *   Enter the max connections per minute (e.g., `5`). 
-*   **Effect:** If an attacker tries to guess passwords via Hydra, the 6th connection attempt within 60 seconds will be logged and instantly dropped.
-
-### Use Case 3: Intrusion Detection (Honeyports)
-**Menu Option:** `2) Enable Honeyport Auto-Ban`
-
-*   **What it does:** Opens a "trap" port. Because no legitimate service runs on this port, any connection attempt is deemed malicious. It logs the attempt and drops the packet.
-*   **When to use:** Set up 2 or 3 honeyports on common ports attackers scan for (e.g., `2222`, `8080`, `9999`).
-*   **How to use:** Enter a port number that is **not** used by any application on your server.
-*   **Effect:** When an attacker runs `nmap` and hits this port, the firewall logs a "HONEYPORT ALERT" with their IP address.
-
-### Use Case 4: Forensic Logging
-**Menu Option:** `4) Enable Catch-all Logging`
-
-*   **What it does:** Appends a final rule to the INPUT chain that logs any packet that didn't match the rules above it. Logs are rate-limited to 5 per minute to prevent disk exhaustion (Log DoS).
-*   **When to use:** Always, as the last step in firewall configuration.
-*   **Effect:** Provides visibility into what traffic is being dropped by your default `DROP` policy.
-
-### Use Case 5: Automated IP Banning (Watchdog Daemon)
-**Menu Option:** `5) Start Watchdog Daemon`
-
-*   **What it does:** Spawns a background process that continuously monitors kernel logs (`dmesg -w`). If it detects a "HONEYPORT ALERT" or an "IPTABLES DROP" (from rate-limiting), it extracts the attacker's IP and inserts a hard `DROP` rule at the very top of the INPUT chain.
-*   **When to use:** After configuring Honeyports and Rate-limiting. It must be running for automated bans to occur.
-*   **Effect:** Converts a *detection* into a *prevention*. The attacker's IP is banned instantly, preventing them from probing other ports.
+```ini
+HONEYPORTS="2222,8080,9999"      # Trap ports
+PROTECTED_PORTS="22,80,443"      # Ports to rate-limit
+MAX_CONN=5                       # Max connections per minute
+GEOIP_BLOCK="CN,RU"              # Block countries (leave empty to disable)
+WEBHOOK_URL="https://hooks..."   # Slack/Discord webhook (leave empty to disable)
+BANLIST_FILE="/etc/firewall-ips/banned_ips.txt" # Persistence file
+```
 
 ---
 
-## 4. Testing & Attack Scenarios
+## 3. Usage Commands
 
-To validate your configuration, you can simulate attacks from a secondary machine (attacker box) targeting the protected server.
+The firewall operates via a standard Command Line Interface (CLI). It does not use an interactive menu; instead, it reads your `config.conf` and applies all rules sequentially to ensure proper ordering.
 
-### Scenario A: Port Scan Detection
-1. Ensure the Firewall, Honeyport (e.g., port 2222), and Watchdog are active.
+**Start the Firewall:**
+Applies all rules from `config.conf` (Stateful firewall, GeoIP, Honeyports, Rate-limits) and starts the background watchdog daemon.
+```bash
+sudo ./firewall.sh start
+```
+
+**Stop the Firewall:**
+Stops the watchdog daemon and flushes all iptables rules (resets to default ACCEPT).
+```bash
+sudo ./firewall.sh stop
+```
+
+**Check Status:**
+Displays all active iptables rules and checks if the watchdog daemon is currently running.
+```bash
+sudo ./firewall.sh status
+```
+
+---
+
+## 4. Web Dashboard
+
+To visualize rules and banned IPs without using the terminal:
+
+1. Run the Flask app (requires `pip3 install -r requirements.txt`):
+   ```bash
+   sudo python3 dashboard.py
+   ```
+2. Open your browser and navigate to `http://<server-ip>:8080`.
+3. You will see active iptables rules and the list of persistent banned IPs.
+
+---
+
+## 5. Testing & Attack Scenarios
+
+Simulate attacks from a secondary machine to validate your configuration.
+
+### Scenario A: Honeyport Detection
+1. Ensure the firewall is started (`sudo ./firewall.sh start`).
 2. From the attacker machine, run:
    ```bash
-   nmap -sS <target-ip> -p 2222
+   nc <target-ip> 2222
    ```
-3. **Result:** The connection is dropped. On the target server, check the watchdog log:
-   ```bash
-   cat /tmp/firewall_watchdog.log
-   ```
-   You should see `[Watchdog] Banned IP: <attacker-ip>`. The attacker can no longer ping or connect to the server.
+3. **Result:** The connection drops immediately. The target server bans the attacker's IP and sends a Slack alert (if configured). The IP is saved to `/etc/firewall-ips/banned_ips.txt`.
 
 ### Scenario B: Brute-Force SSH Prevention
-1. Ensure Stateful Firewall, Rate-Limiting (port 22, 5/min), and Watchdog are active.
+1. Ensure port 22 is in `PROTECTED_PORTS` in `config.conf`.
 2. From the attacker machine, run a Hydra brute-force attack:
    ```bash
-   hydra -l root -P /usr/share/wordlists/rockyou.txt ssh://<target-ip>
+   hydra -l root -P rockyou.txt ssh://<target-ip>
    ```
-3. **Result:** After 5 rapid connection attempts, Hydra will begin timing out. The target server logs the drops, and the watchdog bans the attacker's IP entirely.
+3. **Result:** After 5 rapid connection attempts, Hydra will time out. The attacker IP is permanently banned.
 
-### Scenario C: Honeyport Connection (Netcat)
-1. Ensure Honeyport (e.g., port 9999) and Watchdog are active.
-2. From the attacker machine, attempt to connect:
+---
+
+## 6. Using nftables (Modern Distros)
+
+If you are on a modern distro (Debian 11+, Arch) that defaults to `nftables`:
+
+1. Edit `nftables.rules` to customize your honeyports and protected ports.
+2. Apply the rules directly:
    ```bash
-   nc <target-ip> 9999
+   sudo nft -f nftables.rules
    ```
-3. **Result:** The connection hangs and closes. The attacker IP is immediately banned by the watchdog.
+3. To flush nftables rules:
+   ```bash
+   sudo nft flush ruleset
+   ```
 
 ---
-
-## 5. Operational Management
-
-### Viewing Active Rules & Bans
-**Menu Option:** `7) Show Rules & Status`
-
-Use this frequently to verify your rules are loaded correctly and to see which IPs have been dynamically banned by the watchdog. Banned IPs will appear as `DROP all -- <ip> 0.0.0.0/0` at the very top of the INPUT chain.
-
-### Stopping the Automated Ban Engine
-**Menu Option:** `6) Stop Watchdog Daemon`
-
-If you accidentally ban your own IP during testing, you can stop the watchdog to prevent further automatic actions. Note that existing ban rules will remain in `iptables` until manually deleted or the firewall is flushed.
-
-### Full System Reset
-**Menu Option:** `8) Flush & Reset Firewall`
-
-*   **What it does:** Stops the Watchdog daemon, flushes all `iptables` rules, deletes custom chains, and resets default policies back to `ACCEPT`.
-*   **When to use:** If you lock yourself out of a service, or want to start configuring from a clean slate. 
-*   *Warning:* If you are connected via SSH, flushing the firewall will not drop your current session (due to conntrack established rules being flushed, but the connection remains active at the network layer), but it will expose your server to new connections.
-
----
-
-## 6. Troubleshooting & FAQs
-
-**Q: I locked myself out of SSH! How do I get back in?**
-A: Because this is a host-level firewall, you will need out-of-band access. If you are on a cloud provider (AWS, DigitalOcean, Azure), use their web console to log into the server and run Option 8 to flush the firewall.
-
-**Q: The Watchdog isn't banning IPs. Why?**
-A: Ensure the watchdog is running (Option 7). Check if your system writes iptables logs to `/var/log/syslog` instead of the kernel ring buffer. The watchdog uses `dmesg -w`. If your system uses `rsyslog` exclusively, you may need to modify the `/tmp/firewall_watchdog.sh` script to `tail -f /var/log/syslog` instead.
-
-**Q: Are the ban rules persistent across reboots?**
-A: No. By design, this script applies rules to the live kernel memory. When the server reboots, all rules and bans are cleared. To make them persistent, you must install `iptables-persistent` and run `netfilter-persistent save` after configuring your rules.
-
-**Q: Why am I getting duplicate rules?**
-A: The script includes idempotency checks (it checks `iptables -C` before adding a rule). If you are seeing duplicates, ensure you aren't running an older version of the script.
-
---- 
 
 *Disclaimer: This tool is for educational and lab use. Always test firewall configurations in a non-production environment before deploying to live servers.*
