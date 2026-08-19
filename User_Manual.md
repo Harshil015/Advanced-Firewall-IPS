@@ -44,9 +44,16 @@ HONEYPORTS="2222,8080,9999"      # Trap ports
 PROTECTED_PORTS="22,80,443"      # Ports to rate-limit
 MAX_CONN=5                       # Max connections per minute
 GEOIP_BLOCK="CN,RU"              # Block countries (leave empty to disable)
-WEBHOOK_URL="https://hooks..."   # Slack/Discord webhook (leave empty to disable)
+WEBHOOK_URL=""                   # Slack/Discord webhook (leave empty to disable)
 BANLIST_FILE="/etc/firewall-ips/banned_ips.txt" # Persistence file
+DASHBOARD_PORT=5050              # Port for dashboard.py - must NOT appear in HONEYPORTS
 ```
+
+> **Important:** `DASHBOARD_PORT` must not be one of the ports listed in `HONEYPORTS`. Honeyports
+> are trap ports — any connection to one gets logged and banned automatically. If the dashboard
+> shared a port with a honeyport, viewing your own dashboard (including from `127.0.0.1`) would
+> trigger that same ban logic against you. `dashboard.py` checks for this at startup and exits
+> with an error rather than starting on a colliding port.
 
 ---
 
@@ -82,7 +89,8 @@ To visualize rules and banned IPs without using the terminal:
    ```bash
    sudo python3 dashboard.py
    ```
-2. Open your browser and navigate to `http://<server-ip>:8080`.
+2. Open your browser and navigate to `http://<server-ip>:5050` (or whatever port you set
+   `DASHBOARD_PORT` to in `config.conf` — the default is 5050).
 3. You will see active iptables rules and the list of persistent banned IPs.
 
 ---
@@ -118,10 +126,31 @@ If you are on a modern distro (Debian 11+, Arch) that defaults to `nftables`:
    ```bash
    sudo nft -f nftables.rules
    ```
-3. To flush nftables rules:
+3. (Optional) Populate GeoIP blocking. nftables has no built-in geoip matcher the way
+   iptables does via `xtables-addons`, so `nftables.rules` ships with an empty
+   `geoip_blocked` set. Populate it from real country CIDR data with:
+   ```bash
+   sudo ./scripts/populate_geoip_set.sh
+   ```
+   This reads `GEOIP_BLOCK` from `config.conf` by default (or pass country codes
+   directly, e.g. `sudo ./scripts/populate_geoip_set.sh CN RU`), downloads the
+   corresponding zone files from [ipdeny.com](https://www.ipdeny.com/ipblocks/), and
+   loads them into the set. Re-run it periodically (e.g. via cron) to keep it current.
+4. To flush nftables rules:
    ```bash
    sudo nft flush ruleset
    ```
+
+> **Note — behavioral differences from the iptables path:** the two rule sets are
+> maintained independently, not generated from one another, and differ in a couple of
+> ways worth knowing about:
+> - **Ban duration:** iptables (`firewall.sh`) bans are permanent until manually removed
+>   from the ban file; nftables (`nftables.rules`) bans expire automatically after 1 hour
+>   (`timeout 1h` on the sets). Edit that value if you want different behavior.
+> - **Rate limiting:** both rule sets rate-limit ports 22, 80, and 443 at `5/minute` by
+>   default, matching `config.conf`'s `MAX_CONN=5`. If you change `MAX_CONN` or
+>   `PROTECTED_PORTS` in `config.conf`, remember to update `nftables.rules` by hand too —
+>   it won't pick the change up automatically.
 
 ---
 
