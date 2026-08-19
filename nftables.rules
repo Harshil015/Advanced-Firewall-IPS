@@ -15,6 +15,22 @@ table inet firewall {
         timeout 1h
     }
 
+    # GeoIP blocking (fixes B1). nftables has no built-in "geoip" match the
+    # way iptables has via xtables-addons - there is no kernel/userspace
+    # keyword that resolves a country code to an address range. The real,
+    # idiomatic nftables equivalent is a named set of CIDR blocks that you
+    # populate yourself from a country-IP-block provider (e.g. ipdeny.com,
+    # which publishes exactly this data for use in firewall rules -
+    # https://www.ipdeny.com/ipblocks/). This set ships EMPTY - the "ip
+    # saddr @geoip_blocked drop" rule below is a safe no-op until you
+    # populate it. See scripts/populate_geoip_set.sh, which downloads
+    # zone files for the country codes in config.conf's GEOIP_BLOCK and
+    # loads them into this exact set.
+    set geoip_blocked {
+        type ipv4_addr
+        flags interval
+    }
+
     chain input {
         type filter hook input priority 0; policy drop;
 
@@ -28,17 +44,33 @@ table inet firewall {
         ip saddr @honeypot_bans drop
         ip saddr @rate_limit_bans drop
 
-        # 4. GeoIP Blocking (Requires nftables geoip support)
-        # ip saddr geoip CN,RU drop
+        # 4. GeoIP blocking - drops any source address in the populated set.
+        #    A no-op until scripts/populate_geoip_set.sh (or your own
+        #    tooling) has loaded elements into @geoip_blocked.
+        ip saddr @geoip_blocked drop
 
-        # 5. Rate Limiting for SSH (Port 22)
-        tcp dport 22 meter port22 { ip saddr limit rate over 5/minute } add @rate_limit_bans { ip saddr } drop
+        # 5. Rate limiting for protected services (mirrors config.conf's
+        #    PROTECTED_PORTS + MAX_CONN). NOTE: this file is static and is
+        #    NOT generated from config.conf - if you change MAX_CONN or
+        #    PROTECTED_PORTS there, update the "5/minute" values below to
+        #    match, or the two rule sets will silently drift apart.
+        tcp dport 22  meter port22  { ip saddr limit rate over 5/minute } add @rate_limit_bans { ip saddr } drop
+        tcp dport 80  meter port80  { ip saddr limit rate over 5/minute } add @rate_limit_bans { ip saddr } drop
+        tcp dport 443 meter port443 { ip saddr limit rate over 5/minute } add @rate_limit_bans { ip saddr } drop
 
         # 6. Honeyports (2222, 8080, 9999)
         tcp dport { 2222, 8080, 9999 } add @honeypot_bans { ip saddr } log prefix "HONEYPORT ALERT: " drop
 
-        # 7. Allow specific inbound services (e.g., HTTP/HTTPS)
-        tcp dport { 80, 443 } accept
+        # 7. Allow protected services once they've passed the rate-limit
+        #    meters above. (This accept was previously missing for port 22
+        #    entirely, and would have been missing for 80/443 too once
+        #    rate-limiting was added to them: a "meter ... limit rate over"
+        #    rule only matches - and drops - traffic that EXCEEDS the
+        #    limit, it does not accept traffic that's under it. Without an
+        #    explicit accept here, connections at or under the limit fell
+        #    through to the chain's default drop policy, so as originally
+        #    written, port 22 could never actually be reached at all.)
+        tcp dport { 22, 80, 443 } accept
     }
 
     chain forward {
