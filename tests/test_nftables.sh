@@ -173,6 +173,33 @@ test_http_https_rules() {
   fi
 }
 
+# Test 14: Actually parse the ruleset with nft's own syntax checker
+# (fixes C2). Every test above this line is textual - it greps the file
+# for expected substrings, but a file can contain all the right
+# substrings and still be syntactically invalid nftables (wrong
+# punctuation, bad set flags, etc). `nft -c` is a real, non-mutating
+# dry-run parse: it validates the file exactly the way `nft -f` would
+# without touching any live ruleset, so it's safe to run in CI/tests.
+# Gracefully skipped (not failed) if nft isn't installed, matching the
+# project's existing convention for environment-dependent checks.
+test_nft_syntax_check() {
+  echo -e "${CYAN}[TEST 14] Validating with nft's real syntax checker (nft -c)...${NC}"
+  if ! command -v nft &> /dev/null; then
+    echo -e "${YELLOW}⚠ WARNING: nft not installed in this environment - skipping real syntax check. Not counted as a failure, but nftables.rules has NOT been validated by the actual nft parser.${NC}"
+    return
+  fi
+
+  local nft_output
+  if nft_output=$(nft -c -f "$NFTABLES_FILE" 2>&1); then
+    echo -e "${GREEN}✓ PASS: nft -c confirms nftables.rules is valid, parseable syntax${NC}"
+    ((TESTS_PASSED++))
+  else
+    echo -e "${RED}✗ FAIL: nft rejected nftables.rules:${NC}"
+    echo -e "${RED}$nft_output${NC}"
+    ((TESTS_FAILED++))
+  fi
+}
+
 # ============================================================
 # Run all tests
 # ============================================================
@@ -193,6 +220,7 @@ test_established_rule
 test_honeyport_rules
 test_logging_rules
 test_http_https_rules
+test_nft_syntax_check
 
 # Summary
 echo -e "\n${CYAN}=================================================${NC}"
