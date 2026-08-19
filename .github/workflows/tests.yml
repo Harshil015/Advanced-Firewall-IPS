@@ -1,0 +1,44 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install iptables & nftables
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y iptables nftables
+
+      # Runs as root (via sudo) because tests/test_firewall_behavior.sh
+      # actually invokes firewall.sh, which refuses to run at all unless
+      # $EUID is 0 - the same requirement firewall.sh enforces outside CI.
+      # `-E env "PATH=$PATH"` carries this job's PATH (including the
+      # setup-python interpreter) through to the root shell.
+      - name: Run full test suite
+        run: sudo -E env "PATH=$PATH" bash tests/run_all_tests.sh
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: TEST_REPORT.md
