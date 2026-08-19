@@ -158,6 +158,80 @@ def test_error_handling():
         print_test("Error handling", False, "No exception handling found")
 
 # ============================================================
+# Behavioral tests (fixes C2)
+# Everything above this point is textual: it greps dashboard.py's source
+# for expected strings, but never actually imports the module, calls its
+# route, or exercises its logic. These two tests actually DO that - the
+# same category of gap the issues report flagged across the whole suite.
+# ============================================================
+
+def _load_dashboard_module():
+    """Import dashboard.py as a real module (not just read as text) so we
+    can call its actual functions and hit its actual Flask route."""
+    spec = importlib.util.spec_from_file_location("dashboard_under_test", "./dashboard.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+# Test 12: A real HTTP request against the real Flask route, via Flask's
+# own test client - not a grep for "@app.route" in the source text.
+def test_dashboard_live_request():
+    print(f"{CYAN}[TEST 12] Making a real request to the dashboard via Flask's test client...{NC}")
+    try:
+        module = _load_dashboard_module()
+        client = module.app.test_client()
+        response = client.get("/")
+        ok = response.status_code == 200 and b"Firewall" in response.data
+        print_test(
+            "Live dashboard request",
+            ok,
+            f"GET / returned HTTP {response.status_code}, expected content present: {b'Firewall' in response.data}",
+        )
+    except Exception as e:
+        print_test("Live dashboard request", False, f"{type(e).__name__}: {e}")
+
+# Test 13: Actually CALL the port-collision guard (issue A3's fix) with a
+# forced collision and confirm it refuses to start, rather than just
+# grepping for the word "DASHBOARD_PORT" somewhere in the file.
+def test_dashboard_port_collision_guard():
+    print(f"{CYAN}[TEST 13] Checking the DASHBOARD_PORT/HONEYPORTS collision guard actually refuses to start...{NC}")
+    try:
+        module = _load_dashboard_module()
+
+        original_port = module.DASHBOARD_PORT
+        original_honeyports = module.HONEYPORTS
+        try:
+            # Force a collision and confirm check_port_collision() exits.
+            module.DASHBOARD_PORT = 9999
+            module.HONEYPORTS = ["2222", "8080", "9999"]
+            try:
+                module.check_port_collision()
+                collision_caught = False
+            except SystemExit:
+                collision_caught = True
+
+            # Also confirm it does NOT falsely refuse on a non-colliding config.
+            module.DASHBOARD_PORT = 5050
+            module.HONEYPORTS = ["2222", "8080", "9999"]
+            try:
+                module.check_port_collision()
+                no_false_positive = True
+            except SystemExit:
+                no_false_positive = False
+        finally:
+            module.DASHBOARD_PORT = original_port
+            module.HONEYPORTS = original_honeyports
+
+        ok = collision_caught and no_false_positive
+        print_test(
+            "Dashboard port/honeypot collision guard",
+            ok,
+            f"refuses on collision: {collision_caught}, allows non-colliding config: {no_false_positive}",
+        )
+    except Exception as e:
+        print_test("Dashboard port/honeypot collision guard", False, f"{type(e).__name__}: {e}")
+
+# ============================================================
 # Run all tests
 # ============================================================
 print(f"\n{CYAN}================================================={NC}")
@@ -175,6 +249,8 @@ test_banned_ips_handling()
 test_html_template()
 test_main_block()
 test_error_handling()
+test_dashboard_live_request()
+test_dashboard_port_collision_guard()
 
 # Summary
 print(f"\n{CYAN}================================================={NC}")
