@@ -1,0 +1,27 @@
+# --- This project's own generated artifacts ---
+TEST_REPORT.md
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# --- Logs / runtime state (paths this project itself writes to) ---
+*.log
+/tmp/firewall_watchdog.*
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Editors / IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
