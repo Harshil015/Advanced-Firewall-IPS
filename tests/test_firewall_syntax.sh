@@ -130,7 +130,14 @@ test_watchdog_logic() {
 # Test 9: Webhook integration
 test_webhook_integration() {
   echo -e "${CYAN}[TEST 9] Checking webhook/alert integration...${NC}"
-  if grep -q 'curl.*WEBHOOK_URL' "$FIREWALL_SCRIPT"; then
+  # NOTE: this used to be `grep -q 'curl.*WEBHOOK_URL'`, which only matches
+  # if both words appear on the SAME line. The real curl call is written
+  # across three physical lines using backslash continuation, so that
+  # pattern could never match it - a false FAIL for a feature that's
+  # genuinely implemented. Checking that both tokens appear anywhere in
+  # the file (rather than on one line) is both correct and simpler than a
+  # multi-line/PCRE regex.
+  if grep -q 'curl' "$FIREWALL_SCRIPT" && grep -q 'WEBHOOK_URL' "$FIREWALL_SCRIPT"; then
     echo -e "${GREEN}✓ PASS: Webhook integration found${NC}"
     ((TESTS_PASSED++))
   else
