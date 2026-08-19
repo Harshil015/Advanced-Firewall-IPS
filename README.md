@@ -14,6 +14,14 @@ Across all lab test scenarios — port scans, brute-force attempts, connection f
 | Auto-ban trigger time | Milliseconds from first anomalous connection |
 | Full Linux host hardening time | Under 30 minutes from clean state |
 
+**Methodology:** these figures come from manual lab testing against a live instance using
+the nmap/Hydra/netcat commands in [Testing the detection](#testing-the-detection) below,
+timing how long each takes to trigger a ban. They aren't backed by a committed raw log or
+automated benchmark in this repo yet, so treat them as indicative rather than independently
+verifiable as shipped. `scripts/benchmark_ban_latency.sh` is included so you (or anyone
+reviewing this repo) can reproduce a real, timestamped measurement of honeyport-to-ban
+latency against a live instance.
+
 ---
 
 ## Why I built this
@@ -36,7 +44,7 @@ The honeyport approach was the most interesting design decision. Instead of matc
 
 **Geo-IP filtering** — `xtables-addons` blocks traffic by country of origin, layered on top of the stateful rules.
 
-**Persistent bans** — banned IPs are written to a file and automatically re-applied on every reboot, so a restart doesn't reset the ban list.
+**Persistent bans** — banned IPs are written to a file and automatically re-applied on every reboot, so a restart doesn't reset the ban list. **This describes the iptables path (`firewall.sh`) specifically.** The nftables path (`nftables.rules`) uses a different, intentionally simpler policy: bans there auto-expire after 1 hour (via nftables' set timeouts) rather than persisting indefinitely. Pick whichever behavior fits your use case, or edit `nftables.rules`' `timeout 1h` values to change it.
 
 **Real-time alerting** — Slack and Discord webhooks fire the moment an IP is banned, so the logs don't need to be watched directly.
 
@@ -93,7 +101,10 @@ The honeyport approach was the most interesting design decision. Instead of matc
    ```bash
    sudo python3 dashboard.py
    ```
-   Access it at `http://<your-server-ip>:8080`
+   Access it at `http://<your-server-ip>:5050` by default (the port comes from
+   `DASHBOARD_PORT` in `config.conf`). The dashboard refuses to start if
+   `DASHBOARD_PORT` collides with any port in `HONEYPORTS` — see
+   [Limitations](#limitations) below for why that matters.
 
 ---
 
@@ -129,7 +140,9 @@ firewall.sh       — main Bash engine (CLI: start, stop, status)
 config.conf       — central configuration for thresholds and settings
 dashboard.py      — Flask web application for monitoring
 nftables.rules    — modern equivalent of the iptables rules for newer distros
-USER_MANUAL.md    — comprehensive guide and use cases
+User_Manual.md    — comprehensive guide and use cases
+scripts/          — helper scripts (GeoIP set population, ban-latency benchmark)
+tests/            — automated test suites (see tests/run_all_tests.sh)
 ```
 
 ---
@@ -147,6 +160,14 @@ USER_MANUAL.md    — comprehensive guide and use cases
 
 - IPv4 only — no IPv6 rule support
 - Bash watchdog must remain running for auto-ban and alerting to function
+- `DASHBOARD_PORT` (in `config.conf`) and `HONEYPORTS` must not overlap. Since honeyports
+  are trap ports that get banned on any connection, a dashboard listening on one of them
+  would mean every visit — including your own — looks identical to an attack. `dashboard.py`
+  checks for this collision at startup and refuses to run if one exists.
+- GeoIP blocking works differently between the two rule sets: `firewall.sh` (iptables) uses
+  the `xtables-addons` GeoIP match directly; `nftables.rules` uses a named set you populate
+  yourself via `scripts/populate_geoip_set.sh` (nftables has no built-in geoip matcher). Ban
+  duration also differs — see the "Persistent bans" note above.
 
 ---
 
