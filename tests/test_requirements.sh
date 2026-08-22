@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # ============================================================
-#  nftables Rules File Tests
-#  Validates nftables.rules syntax and configuration
+#  Requirements & Dependencies Tests
+#  Validates requirements.txt and system dependencies
 # ============================================================
 
 set -uo pipefail
 
-NFTABLES_FILE="./nftables.rules"
+REQUIREMENTS_FILE="./requirements.txt"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -17,185 +17,145 @@ NC='\033[0m'
 TESTS_PASSED=0
 TESTS_FAILED=0
 
-# Test 1: nftables.rules file exists
-test_nftables_exists() {
-  echo -e "${CYAN}[TEST 1] Checking if nftables.rules exists...${NC}"
-  if [ -f "$NFTABLES_FILE" ]; then
-    echo -e "${GREEN}✓ PASS: nftables.rules found${NC}"
+# Test 1: requirements.txt exists
+test_requirements_exists() {
+  echo -e "${CYAN}[TEST 1] Checking if requirements.txt exists...${NC}"
+  if [ -f "$REQUIREMENTS_FILE" ]; then
+    echo -e "${GREEN}✓ PASS: requirements.txt found${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: nftables.rules not found${NC}"
+    echo -e "${RED}✗ FAIL: requirements.txt not found${NC}"
     ((TESTS_FAILED++))
   fi
 }
 
-# Test 2: File has valid shebang for nft
-test_shebang() {
-  echo -e "${CYAN}[TEST 2] Checking for valid nft shebang...${NC}"
-  if head -n 1 "$NFTABLES_FILE" | grep -q "^#!/.*nft"; then
-    echo -e "${GREEN}✓ PASS: Valid nft shebang found${NC}"
+# Test 2: requirements.txt is not empty
+test_requirements_not_empty() {
+  echo -e "${CYAN}[TEST 2] Checking if requirements.txt contains packages...${NC}"
+  if [ -s "$REQUIREMENTS_FILE" ]; then
+    local count=$(wc -l < "$REQUIREMENTS_FILE")
+    echo -e "${GREEN}✓ PASS: Found $count package(s)${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: Invalid or missing nft shebang${NC}"
+    echo -e "${RED}✗ FAIL: requirements.txt is empty${NC}"
     ((TESTS_FAILED++))
   fi
 }
 
-# Test 3: Check for table definition
-test_table_definition() {
-  echo -e "${CYAN}[TEST 3] Checking for nftables table definition...${NC}"
-  if grep -q 'table.*firewall' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Table definition found${NC}"
+# Test 3: Flask is listed in requirements
+test_flask_in_requirements() {
+  echo -e "${CYAN}[TEST 3] Checking if Flask is in requirements...${NC}"
+  if grep -q "Flask" "$REQUIREMENTS_FILE"; then
+    local version=$(grep "Flask" "$REQUIREMENTS_FILE")
+    echo -e "${GREEN}✓ PASS: Flask dependency found: $version${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: Table definition not found${NC}"
+    echo -e "${RED}✗ FAIL: Flask not listed in requirements${NC}"
     ((TESTS_FAILED++))
   fi
 }
 
-# Test 4: Check for input chain
-test_input_chain() {
-  echo -e "${CYAN}[TEST 4] Checking for input chain...${NC}"
-  if grep -q 'chain input' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Input chain defined${NC}"
+# Test 4: Requirements format validation
+test_requirements_format() {
+  echo -e "${CYAN}[TEST 4] Validating requirements format...${NC}"
+  local valid=true
+  while IFS= read -r line; do
+    # Skip empty lines and comments
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    
+    # Check if line matches valid pip requirement format
+    if ! [[ $line =~ ^[a-zA-Z0-9_-]+.*$ ]]; then
+      echo -e "${YELLOW}! Invalid format: $line${NC}"
+      valid=false
+    fi
+  done < "$REQUIREMENTS_FILE"
+  
+  if [ "$valid" = true ]; then
+    echo -e "${GREEN}✓ PASS: All requirements have valid format${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: Input chain not found${NC}"
+    echo -e "${RED}✗ FAIL: Some requirements have invalid format${NC}"
     ((TESTS_FAILED++))
   fi
 }
 
-# Test 5: Check for forward chain
-test_forward_chain() {
-  echo -e "${CYAN}[TEST 5] Checking for forward chain...${NC}"
-  if grep -q 'chain forward' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Forward chain defined${NC}"
+# Test 5: System dependencies check (bash/shell)
+test_bash_available() {
+  echo -e "${CYAN}[TEST 5] Checking if bash is available...${NC}"
+  if command -v bash &> /dev/null; then
+    local version=$(bash --version | head -n 1)
+    echo -e "${GREEN}✓ PASS: Bash available - $version${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: Forward chain not found${NC}"
+    echo -e "${RED}✗ FAIL: Bash not found${NC}"
     ((TESTS_FAILED++))
   fi
 }
 
-# Test 6: Check for output chain
-test_output_chain() {
-  echo -e "${CYAN}[TEST 6] Checking for output chain...${NC}"
-  if grep -q 'chain output' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Output chain defined${NC}"
+# Test 6: Python availability
+test_python_available() {
+  echo -e "${CYAN}[TEST 6] Checking if Python 3 is available...${NC}"
+  if command -v python3 &> /dev/null; then
+    local version=$(python3 --version 2>&1)
+    echo -e "${GREEN}✓ PASS: Python 3 available - $version${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: Output chain not found${NC}"
+    echo -e "${RED}✗ FAIL: Python 3 not found${NC}"
     ((TESTS_FAILED++))
   fi
 }
 
-# Test 7: Check for honeypot set definition
-test_honeypot_set() {
-  echo -e "${CYAN}[TEST 7] Checking for honeypot ban set...${NC}"
-  if grep -q 'set honeypot_bans' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Honeypot ban set defined${NC}"
+# Test 7: iptables/netfilter availability
+# NOTE: this is environment-dependent, not a code defect - iptables is
+# normally present on this project's actual target systems (Ubuntu, Kali,
+# Debian-based distros), but a minimal/lightweight CI container or Docker
+# image may not have it installed at all. Treat that as a WARNING rather
+# than a hard FAIL so the rest of the suite stays portable to CI runners
+# that don't include it, instead of failing the whole suite over something
+# that isn't actually broken.
+test_iptables_available() {
+  echo -e "${CYAN}[TEST 7] Checking if iptables is available...${NC}"
+  if command -v iptables &> /dev/null; then
+    echo -e "${GREEN}✓ PASS: iptables command found${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: Honeypot ban set not found${NC}"
+    echo -e "${YELLOW}⚠ WARNING: iptables not found in this environment. This is expected on minimal/CI containers and is not treated as a failure - but iptables IS required on the systems this tool actually targets (Ubuntu/Kali/Debian).${NC}"
+  fi
+}
+
+# Test 8: curl availability (for webhooks)
+test_curl_available() {
+  echo -e "${CYAN}[TEST 8] Checking if curl is available (for webhooks)...${NC}"
+  if command -v curl &> /dev/null; then
+    echo -e "${GREEN}✓ PASS: curl command found${NC}"
+    ((TESTS_PASSED++))
+  else
+    echo -e "${RED}✗ FAIL: curl not found (webhooks will not work)${NC}"
     ((TESTS_FAILED++))
   fi
 }
 
-# Test 8: Check for rate limit set definition
-test_rate_limit_set() {
-  echo -e "${CYAN}[TEST 8] Checking for rate limit set...${NC}"
-  if grep -q 'set rate_limit_bans' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Rate limit ban set defined${NC}"
+# Test 9: dmesg availability (for watchdog)
+test_dmesg_available() {
+  echo -e "${CYAN}[TEST 9] Checking if dmesg is available (for watchdog)...${NC}"
+  if command -v dmesg &> /dev/null; then
+    echo -e "${GREEN}✓ PASS: dmesg command found${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: Rate limit ban set not found${NC}"
+    echo -e "${RED}✗ FAIL: dmesg not found (watchdog may not function)${NC}"
     ((TESTS_FAILED++))
   fi
 }
 
-# Test 9: Check for localhost allow rule
-test_localhost_rule() {
-  echo -e "${CYAN}[TEST 9] Checking for localhost (loopback) allow rule...${NC}"
-  if grep -q 'iif "lo" accept' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Localhost allow rule found${NC}"
+# Test 10: pip3 availability
+test_pip_available() {
+  echo -e "${CYAN}[TEST 10] Checking if pip3 is available...${NC}"
+  if command -v pip3 &> /dev/null; then
+    local version=$(pip3 --version 2>&1)
+    echo -e "${GREEN}✓ PASS: pip3 available - $version${NC}"
     ((TESTS_PASSED++))
   else
-    echo -e "${RED}✗ FAIL: Localhost allow rule not found${NC}"
-    ((TESTS_FAILED++))
-  fi
-}
-
-# Test 10: Check for established/related connections rule
-test_established_rule() {
-  echo -e "${CYAN}[TEST 10] Checking for established/related connections rule...${NC}"
-  if grep -q 'ct state established' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Established/related rule found${NC}"
-    ((TESTS_PASSED++))
-  else
-    echo -e "${RED}✗ FAIL: Established/related rule not found${NC}"
-    ((TESTS_FAILED++))
-  fi
-}
-
-# Test 11: Check for honeyport rules
-test_honeyport_rules() {
-  echo -e "${CYAN}[TEST 11] Checking for honeyport definitions...${NC}"
-  if grep -q 'dport.*2222.*8080.*9999' "$NFTABLES_FILE" || grep -q 'dport { 2222' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Honeyport rules defined${NC}"
-    ((TESTS_PASSED++))
-  else
-    echo -e "${RED}✗ FAIL: Honeyport rules not found${NC}"
-    ((TESTS_FAILED++))
-  fi
-}
-
-# Test 12: Check for logging rules
-test_logging_rules() {
-  echo -e "${CYAN}[TEST 12] Checking for logging configuration...${NC}"
-  if grep -q 'log prefix' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: Logging rules defined${NC}"
-    ((TESTS_PASSED++))
-  else
-    echo -e "${RED}✗ FAIL: Logging rules not found${NC}"
-    ((TESTS_FAILED++))
-  fi
-}
-
-# Test 13: Check for HTTP/HTTPS allow rules
-test_http_https_rules() {
-  echo -e "${CYAN}[TEST 13] Checking for HTTP/HTTPS allow rules...${NC}"
-  if grep -q 'dport.*80.*443' "$NFTABLES_FILE" || grep -q 'dport { 80, 443' "$NFTABLES_FILE"; then
-    echo -e "${GREEN}✓ PASS: HTTP/HTTPS rules defined${NC}"
-    ((TESTS_PASSED++))
-  else
-    echo -e "${RED}✗ FAIL: HTTP/HTTPS rules not found${NC}"
-    ((TESTS_FAILED++))
-  fi
-}
-
-# Test 14: Actually parse the ruleset with nft's own syntax checker
-# (fixes C2). Every test above this line is textual - it greps the file
-# for expected substrings, but a file can contain all the right
-# substrings and still be syntactically invalid nftables (wrong
-# punctuation, bad set flags, etc). `nft -c` is a real, non-mutating
-# dry-run parse: it validates the file exactly the way `nft -f` would
-# without touching any live ruleset, so it's safe to run in CI/tests.
-# Gracefully skipped (not failed) if nft isn't installed, matching the
-# project's existing convention for environment-dependent checks.
-test_nft_syntax_check() {
-  echo -e "${CYAN}[TEST 14] Validating with nft's real syntax checker (nft -c)...${NC}"
-  if ! command -v nft &> /dev/null; then
-    echo -e "${YELLOW}⚠ WARNING: nft not installed in this environment - skipping real syntax check. Not counted as a failure, but nftables.rules has NOT been validated by the actual nft parser.${NC}"
-    return
-  fi
-
-  local nft_output
-  if nft_output=$(nft -c -f "$NFTABLES_FILE" 2>&1); then
-    echo -e "${GREEN}✓ PASS: nft -c confirms nftables.rules is valid, parseable syntax${NC}"
-    ((TESTS_PASSED++))
-  else
-    echo -e "${RED}✗ FAIL: nft rejected nftables.rules:${NC}"
-    echo -e "${RED}$nft_output${NC}"
+    echo -e "${YELLOW}⚠ WARNING: pip3 not found (needed for Flask installation)${NC}"
     ((TESTS_FAILED++))
   fi
 }
@@ -204,23 +164,19 @@ test_nft_syntax_check() {
 # Run all tests
 # ============================================================
 echo -e "\n${CYAN}=================================================${NC}"
-echo -e "${CYAN}   🛡️  nftables Rules Test Suite${NC}"
+echo -e "${CYAN}   📦 Requirements & Dependencies Test Suite${NC}"
 echo -e "${CYAN}=================================================${NC}\n"
 
-test_nftables_exists
-test_shebang
-test_table_definition
-test_input_chain
-test_forward_chain
-test_output_chain
-test_honeypot_set
-test_rate_limit_set
-test_localhost_rule
-test_established_rule
-test_honeyport_rules
-test_logging_rules
-test_http_https_rules
-test_nft_syntax_check
+test_requirements_exists
+test_requirements_not_empty
+test_flask_in_requirements
+test_requirements_format
+test_bash_available
+test_python_available
+test_iptables_available
+test_curl_available
+test_dmesg_available
+test_pip_available
 
 # Summary
 echo -e "\n${CYAN}=================================================${NC}"
@@ -231,9 +187,9 @@ echo -e "${RED}Failed: $TESTS_FAILED${NC}"
 echo -e "${CYAN}Total: $((TESTS_PASSED + TESTS_FAILED))${NC}\n"
 
 if [ $TESTS_FAILED -eq 0 ]; then
-  echo -e "${GREEN}✓ All nftables tests passed!${NC}\n"
+  echo -e "${GREEN}✓ All dependency tests passed!${NC}\n"
   exit 0
 else
-  echo -e "${RED}✗ Some tests failed. Please review the nftables configuration.${NC}\n"
+  echo -e "${YELLOW}⚠ Some tests failed. System dependencies may be missing.${NC}\n"
   exit 1
 fi
